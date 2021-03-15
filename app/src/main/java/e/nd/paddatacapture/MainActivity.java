@@ -165,6 +165,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.i("GBT", "onActivityResult");
         if (resultCode == RESULT_OK && requestCode == 10) {
+            File rectifiedFile = null;
             Log.i("GBR", data.toString());
             if (data.hasExtra("raw")) {
                 File file = new File(data.getExtras().getString("raw"));
@@ -178,9 +179,10 @@ public class MainActivity extends AppCompatActivity {
                 Log.i("GBR", "Raw missing");
             }
             if (data.hasExtra("rectified")){
-                File file = new File(data.getExtras().getString("rectified"));
-                this.rectified = FileProvider.getUriForFile(getApplicationContext(), getApplicationContext().getPackageName(), new File(file.getPath()));
+                rectifiedFile = new File(data.getExtras().getString("rectified"));
+                this.rectified = FileProvider.getUriForFile(getApplicationContext(), getApplicationContext().getPackageName(), new File(rectifiedFile.getPath()));
                 getApplicationContext().grantUriPermission(getApplicationContext().getPackageName(), this.rectified, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                Log.i("GBR", rectifiedFile.toString());
             } else {
                 Log.i("GBR", "Rectified missing");
             }
@@ -197,38 +199,47 @@ public class MainActivity extends AppCompatActivity {
                 Log.i("GBR", "Timestamp missing");
             }
             updateExternalData();
+
+            //
+            // Analysis code for every frame
+            // Preprocess the image
+            //Bitmap bitmap = BitmapFactory.decodeFile("test_4.png");
+            Log.i("GBR","Pre-image");
+            try {
+                // crop input image
+                Bitmap bm = BitmapFactory.decodeFile(rectifiedFile.getPath());
+                bm = Bitmap.createBitmap(bm, 71, 359, 636, 490);
+                //Log.i("GBR", String.valueOf(bm.getWidth()));
+
+                InputStream bitmap=getAssets().open("test_4.png");
+                Bitmap bit = BitmapFactory.decodeStream(bitmap);
+                tImage.load(bm);
+                tImage = imageProcessor.process(tImage);
+                Log.i("GBR","Post-image");
+                // Running inference
+                if(null != tflite) {
+                    Log.i("GBR","Pre-predict");
+                    tflite.run(tImage.getBuffer(), probabilityBuffer.getBuffer());
+                    Log.i("GBR","Post-predict");
+                    float[] probArray = probabilityBuffer.getFloatArray();
+                    int maxidx = findMaxIndex(probArray);
+
+                    Log.i("GBR", String.valueOf(probabilityBuffer.getFloatArray()[3]));
+                    Log.i("GBR", String.valueOf(probabilityBuffer.getFloatArray()[maxidx]));
+
+                    Log.i("GBR", associatedAxisLabels.get(maxidx));
+
+                }
+
+            } catch (IOException e1) {
+                // TODO Auto-generated catch block
+                e1.printStackTrace();
+            }
+
         }
         else if (requestCode == 11) {
             Log.i("GBR", "Calling from email done");
             startImageCapture();
-        }
-
-        //
-        // Analysis code for every frame
-        // Preprocess the image
-        //Bitmap bitmap = BitmapFactory.decodeFile("test_4.png");
-        Log.i("GBR","Pre-image");
-        try {
-            InputStream bitmap=getAssets().open("test_4.png");
-            Bitmap bit = BitmapFactory.decodeStream(bitmap);
-            tImage.load(bit);
-            tImage = imageProcessor.process(tImage);
-            Log.i("GBR","Post-image");
-            // Running inference
-            if(null != tflite) {
-                Log.i("GBR","Pre-predict");
-                tflite.run(tImage.getBuffer(), probabilityBuffer.getBuffer());
-                Log.i("GBR","Post-predict");
-                Log.i("GBR", String.valueOf(probabilityBuffer.getFloatArray()[3]));
-                Log.i("GBR", String.valueOf(probabilityBuffer.getFloatArray()[4]));
-
-                Log.i("GBR", associatedAxisLabels.get(4));
-
-            }
-
-        } catch (IOException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
         }
 
         //
@@ -524,5 +535,17 @@ public class MainActivity extends AppCompatActivity {
     private static final ArrayList<String> testBatches = new ArrayList<String>(){{
         add("n/a");
     }};
+
+    private static final int findMaxIndex(float [] arr) {
+        float max = arr[0];
+        int maxIdx = 0;
+        for(int i = 1; i < arr.length; i++) {
+            if(arr[i] > max) {
+                max = arr[i];
+                maxIdx = i;
+            }
+        }
+        return maxIdx;
+    };
 
 }
