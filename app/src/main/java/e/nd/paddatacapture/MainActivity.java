@@ -47,6 +47,7 @@ import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.support.common.FileUtil;
 import org.tensorflow.lite.support.common.TensorProcessor;
 import org.tensorflow.lite.support.label.TensorLabel;
+import org.tensorflow.lite.support.metadata.MetadataExtractor;
 
 import java.nio.MappedByteBuffer;
 import java.io.InputStream;
@@ -115,6 +116,7 @@ public class MainActivity extends AppCompatActivity {
             tfliteModel
                     = FileUtil.loadMappedFile(this,
                     "model_small_1_10.tflite");
+            MetadataExtractor metadata = new MetadataExtractor(tfliteModel);
             tflite = new Interpreter(tfliteModel, tfliteOptions);
 
             int[] probabilityShape =
