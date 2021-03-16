@@ -48,6 +48,7 @@ import org.tensorflow.lite.support.common.FileUtil;
 import org.tensorflow.lite.support.common.TensorProcessor;
 import org.tensorflow.lite.support.label.TensorLabel;
 import org.tensorflow.lite.support.metadata.MetadataExtractor;
+import org.tensorflow.lite.support.metadata.schema.ModelMetadata;
 
 import java.nio.MappedByteBuffer;
 import java.io.InputStream;
@@ -55,6 +56,9 @@ import java.util.List;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
 
 public class MainActivity extends AppCompatActivity {
     static final String PROJECT = "FHI2020";
@@ -116,7 +120,35 @@ public class MainActivity extends AppCompatActivity {
             tfliteModel
                     = FileUtil.loadMappedFile(this,
                     "model_small_1_10.tflite");
+
+            // does it have metadata?
             MetadataExtractor metadata = new MetadataExtractor(tfliteModel);
+            if(metadata.hasMetadata()) {
+                // create new list
+                associatedAxisLabels = new ArrayList<>();
+
+                // get labels
+                InputStream a = metadata.getAssociatedFile("labels.txt");
+                BufferedReader r = new BufferedReader(new InputStreamReader(a));
+                String line;
+                while ((line = r.readLine()) != null) {
+                    associatedAxisLabels.add(line);
+                    //Log.e("GBR", line);
+                }
+
+                // other metadata
+                ModelMetadata mm = metadata.getModelMetadata();
+                Log.e("GBR", mm.description());
+
+            }else{
+                // load labels from file
+                try {
+                    associatedAxisLabels = FileUtil.loadLabels(this, ASSOCIATED_AXIS_LABELS);
+                } catch (IOException e) {
+                    Log.e("GBR", "Error reading label file", e);
+                }
+            }
+
             tflite = new Interpreter(tfliteModel, tfliteOptions);
 
             int[] probabilityShape =
@@ -127,12 +159,6 @@ public class MainActivity extends AppCompatActivity {
             Log.e("GBR", "Error reading model", e);
         }
 
-        // load labels
-        try {
-            associatedAxisLabels = FileUtil.loadLabels(this, ASSOCIATED_AXIS_LABELS);
-        } catch (IOException e) {
-            Log.e("GBR", "Error reading label file", e);
-        }
 
     }
 
