@@ -123,6 +123,7 @@ public class MainActivity extends AppCompatActivity {
                 // other metadata
                 ModelMetadata mm = metadata.getModelMetadata();
                 Log.e("GBR", mm.description());
+                Log.e("GBR", mm.version());
 
             }else{
                 // load labels from file
