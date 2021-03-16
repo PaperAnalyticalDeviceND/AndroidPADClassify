@@ -98,23 +98,7 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        // Initialization code
-        // Create an ImageProcessor with all ops required. For more ops, please
-        // refer to the ImageProcessor Architecture section in this README.
-        imageProcessor =
-                new ImageProcessor.Builder()
-                        .add(new ResizeOp(227, 227, ResizeOp.ResizeMethod.BILINEAR))
-                        .build();
-
-        // Create a TensorImage object. This creates the tensor of the corresponding
-        // tensor type (uint8 in this case) that the TensorFlow Lite interpreter needs.
-        tImage = new TensorImage(DataType.FLOAT32);
-
-        // Create a container for the result and specify that this is a quantized model.
-        // Hence, the 'DataType' is defined as UINT8 (8-bit unsigned integer)
-        probabilityBuffer =
-                TensorBuffer.createFixedSize(new int[]{1, 10}, DataType.FLOAT32);
-
+        // Initialization code for TensorFlow Lite
         // Initialise the model
         try{
             tfliteModel
@@ -149,16 +133,43 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
+            // create interpreter
             tflite = new Interpreter(tfliteModel, tfliteOptions);
 
+            // Reads type and shape of input and output tensors, respectively.
+            // input
+            int imageTensorIndex = 0;
+            int[] imageShape = tflite.getInputTensor(imageTensorIndex).shape(); // {1, 227, 227, 3}
+            DataType imageDataType = tflite.getInputTensor(imageTensorIndex).dataType();
+
+            //output
+            int probabilityTensorIndex = 0;
+            // get output shape
             int[] probabilityShape =
-                    tflite.getOutputTensor(0).shape();
-            Log.e("GBR", String.valueOf(probabilityShape[0]));
+                    tflite.getOutputTensor(0).shape(); // {1, NUM_CLASSES}
             Log.e("GBR", String.valueOf(probabilityShape[1]));
+            DataType probabilityDataType = tflite.getOutputTensor(probabilityTensorIndex).dataType();
+
+            // Create an ImageProcessor with all ops required. For more ops, please
+            // refer to the ImageProcessor Architecture section in this README.
+            imageProcessor =
+                    new ImageProcessor.Builder()
+                            .add(new ResizeOp(imageShape[2], imageShape[1], ResizeOp.ResizeMethod.BILINEAR))
+                            .build();
+
+            // Create a TensorImage object. This creates the tensor of the corresponding
+            // tensor type DataType.FLOAT32.
+            tImage = new TensorImage(imageDataType);
+
+            // Create a container for the result and specify that this is not a quantized model.
+            // Hence, the 'DataType' is defined as DataType.FLOAT32
+            probabilityBuffer =
+                    TensorBuffer.createFixedSize(probabilityShape, probabilityDataType);
+                    //TensorBuffer.createFixedSize(new int[]{1, 10}, DataType.FLOAT32);
+
         } catch (IOException e){
             Log.e("GBR", "Error reading model", e);
         }
-
 
     }
 
@@ -228,41 +239,39 @@ public class MainActivity extends AppCompatActivity {
             }
             updateExternalData();
 
-            //
-            // Analysis code for every frame
-            // Preprocess the image
-            //Bitmap bitmap = BitmapFactory.decodeFile("test_4.png");
-            Log.i("GBR","Pre-image");
-            try {
-                // crop input image
-                Bitmap bm = BitmapFactory.decodeFile(rectifiedFile.getPath());
-                bm = Bitmap.createBitmap(bm, 71, 359, 636, 490);
-                //Log.i("GBR", String.valueOf(bm.getWidth()));
+            /*
+             Analysis code for every frame
+             Pre-process the image
+            */
 
-                InputStream bitmap=getAssets().open("test_4.png");
-                Bitmap bit = BitmapFactory.decodeStream(bitmap);
-                tImage.load(bm);
-                tImage = imageProcessor.process(tImage);
-                Log.i("GBR","Post-image");
-                // Running inference
-                if(null != tflite) {
-                    Log.i("GBR","Pre-predict");
-                    tflite.run(tImage.getBuffer(), probabilityBuffer.getBuffer());
-                    Log.i("GBR","Post-predict");
-                    float[] probArray = probabilityBuffer.getFloatArray();
-                    int maxidx = findMaxIndex(probArray);
+            //try {
+            // crop input image
+            Bitmap bm = BitmapFactory.decodeFile(rectifiedFile.getPath());
+            bm = Bitmap.createBitmap(bm, 71, 359, 636, 490);
+            //Log.i("GBR", String.valueOf(bm.getWidth()));
 
-                    Log.i("GBR", String.valueOf(probabilityBuffer.getFloatArray()[3]));
-                    Log.i("GBR", String.valueOf(probabilityBuffer.getFloatArray()[maxidx]));
+            // InputStream bitmap=getAssets().open("test_4.png");
+            // Bitmap bit = BitmapFactory.decodeStream(bitmap);
+            tImage.load(bm);
+            tImage = imageProcessor.process(tImage);
 
-                    Log.i("GBR", associatedAxisLabels.get(maxidx));
+            // Running inference
+            if(null != tflite) {
+                // categorize
+                tflite.run(tImage.getBuffer(), probabilityBuffer.getBuffer());
+                float[] probArray = probabilityBuffer.getFloatArray();
+                int maxidx = findMaxIndex(probArray);
 
-                }
+                // print results
+                Log.i("GBR", String.valueOf(probabilityBuffer.getFloatArray()[3]));
+                Log.i("GBR", String.valueOf(probabilityBuffer.getFloatArray()[maxidx]));
+                Log.i("GBR", associatedAxisLabels.get(maxidx));
 
-            } catch (IOException e1) {
-                // TODO Auto-generated catch block
-                e1.printStackTrace();
             }
+//            } catch (IOException e1) {
+//                // TODO Auto-generated catch block
+//                e1.printStackTrace();
+//            }
 
         }
         else if (requestCode == 11) {
