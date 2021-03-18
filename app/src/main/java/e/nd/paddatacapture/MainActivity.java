@@ -69,20 +69,24 @@ public class MainActivity extends AppCompatActivity {
     String timestamp = null;
     File cDir = null;
 
-    ImageProcessor imageProcessor = null;
-    TensorImage tImage = null;
-    TensorBuffer probabilityBuffer = null;
+    // NN storage, now setting up array for multiple NN
+    String[] model_list = {"fhi360_small_1_21.tflite", "fhi360_small_1_21.tflite"};
+
+    ImageProcessor[] imageProcessor = {null, null};
+    TensorImage[] tImage =  {null, null};
+    TensorBuffer[] probabilityBuffer = {null, null};
     /** An instance of the driver class to run model inference with Tensorflow Lite. */
     // TODO: Declare a TFLite interpreter
-    protected Interpreter tflite;
+    protected Interpreter[] tflite = {null, null};
 
     /** The loaded TensorFlow Lite model. */
-    private MappedByteBuffer tfliteModel;
+    private MappedByteBuffer[] tfliteModel = {null, null};
     /** Options for configuring the Interpreter. */
-    private final Interpreter.Options tfliteOptions = new Interpreter.Options();
+    private final Interpreter.Options[] tfliteOptions = {new Interpreter.Options(), new Interpreter.Options()};
 
-    final String ASSOCIATED_AXIS_LABELS = "labels.txt";
-    List<String> associatedAxisLabels = null;
+    final String[] ASSOCIATED_AXIS_LABELS = {"labels.txt", "labels.txt"};
+    //ArrayList<String> associatedAxisLabels = null;
+    List<String>[] associatedAxisLabels = (ArrayList<String>[])new ArrayList[2];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,23 +104,24 @@ public class MainActivity extends AppCompatActivity {
 
         // Initialization code for TensorFlow Lite
         // Initialise the model
+        final int num_mod = 0;
         try{
-            tfliteModel
+            tfliteModel[num_mod]
                     = FileUtil.loadMappedFile(this,
-                    "model_small_1_10.tflite");
+                    model_list[num_mod]);
 
             // does it have metadata?
-            MetadataExtractor metadata = new MetadataExtractor(tfliteModel);
+            MetadataExtractor metadata = new MetadataExtractor(tfliteModel[0]);
             if(metadata.hasMetadata()) {
                 // create new list
-                associatedAxisLabels = new ArrayList<>();
+                associatedAxisLabels[num_mod] = new ArrayList<>();
 
                 // get labels
                 InputStream a = metadata.getAssociatedFile("labels.txt");
                 BufferedReader r = new BufferedReader(new InputStreamReader(a));
                 String line;
                 while ((line = r.readLine()) != null) {
-                    associatedAxisLabels.add(line);
+                    associatedAxisLabels[num_mod].add(line);
                     //Log.e("GBR", line);
                 }
 
@@ -128,43 +133,43 @@ public class MainActivity extends AppCompatActivity {
             }else{
                 // load labels from file
                 try {
-                    associatedAxisLabels = FileUtil.loadLabels(this, ASSOCIATED_AXIS_LABELS);
+                    associatedAxisLabels[num_mod] = FileUtil.loadLabels(this, ASSOCIATED_AXIS_LABELS[num_mod]);
                 } catch (IOException e) {
                     Log.e("GBR", "Error reading label file", e);
                 }
             }
 
             // create interpreter
-            tflite = new Interpreter(tfliteModel, tfliteOptions);
+            tflite[num_mod] = new Interpreter(tfliteModel[num_mod], tfliteOptions[num_mod]);
 
             // Reads type and shape of input and output tensors, respectively.
             // input
             int imageTensorIndex = 0;
-            int[] imageShape = tflite.getInputTensor(imageTensorIndex).shape(); // {1, 227, 227, 3}
-            DataType imageDataType = tflite.getInputTensor(imageTensorIndex).dataType();
+            int[] imageShape = tflite[num_mod].getInputTensor(imageTensorIndex).shape(); // {1, 227, 227, 3}
+            DataType imageDataType = tflite[num_mod].getInputTensor(imageTensorIndex).dataType();
 
             //output
             int probabilityTensorIndex = 0;
             // get output shape
             int[] probabilityShape =
-                    tflite.getOutputTensor(0).shape(); // {1, NUM_CLASSES}
+                    tflite[num_mod].getOutputTensor(0).shape(); // {1, NUM_CLASSES}
             Log.e("GBR", String.valueOf(probabilityShape[1]));
-            DataType probabilityDataType = tflite.getOutputTensor(probabilityTensorIndex).dataType();
+            DataType probabilityDataType = tflite[num_mod].getOutputTensor(probabilityTensorIndex).dataType();
 
             // Create an ImageProcessor with all ops required. For more ops, please
             // refer to the ImageProcessor Architecture section in this README.
-            imageProcessor =
+            imageProcessor[num_mod] =
                     new ImageProcessor.Builder()
                             .add(new ResizeOp(imageShape[2], imageShape[1], ResizeOp.ResizeMethod.BILINEAR))
                             .build();
 
             // Create a TensorImage object. This creates the tensor of the corresponding
             // tensor type DataType.FLOAT32.
-            tImage = new TensorImage(imageDataType);
+            tImage[num_mod] = new TensorImage(imageDataType);
 
             // Create a container for the result and specify that this is not a quantized model.
             // Hence, the 'DataType' is defined as DataType.FLOAT32
-            probabilityBuffer =
+            probabilityBuffer[num_mod] =
                     TensorBuffer.createFixedSize(probabilityShape, probabilityDataType);
                     //TensorBuffer.createFixedSize(new int[]{1, 10}, DataType.FLOAT32);
 
@@ -244,29 +249,31 @@ public class MainActivity extends AppCompatActivity {
              Analysis code for every frame
              Pre-process the image
             */
-
+            
             //try {
             // crop input image
             Bitmap bm = BitmapFactory.decodeFile(rectifiedFile.getPath());
             bm = Bitmap.createBitmap(bm, 71, 359, 636, 490);
             //Log.i("GBR", String.valueOf(bm.getWidth()));
 
+            final int num_mod = 0;
+
             // InputStream bitmap=getAssets().open("test_4.png");
             // Bitmap bit = BitmapFactory.decodeStream(bitmap);
-            tImage.load(bm);
-            tImage = imageProcessor.process(tImage);
+            tImage[num_mod].load(bm);
+            tImage[num_mod] = imageProcessor[num_mod].process(tImage[num_mod]);
 
             // Running inference
-            if(null != tflite) {
+            if(null != tflite[num_mod]) {
                 // categorize
-                tflite.run(tImage.getBuffer(), probabilityBuffer.getBuffer());
-                float[] probArray = probabilityBuffer.getFloatArray();
+                tflite[num_mod].run(tImage[num_mod].getBuffer(), probabilityBuffer[num_mod].getBuffer());
+                float[] probArray = probabilityBuffer[num_mod].getFloatArray();
                 int maxidx = findMaxIndex(probArray);
 
                 // print results
-                Log.i("GBR", String.valueOf(probabilityBuffer.getFloatArray()[3]));
-                Log.i("GBR", String.valueOf(probabilityBuffer.getFloatArray()[maxidx]));
-                Log.i("GBR", associatedAxisLabels.get(maxidx));
+                Log.i("GBR", String.valueOf(probabilityBuffer[num_mod].getFloatArray()[0]));
+                Log.i("GBR", String.valueOf(probabilityBuffer[num_mod].getFloatArray()[maxidx]));
+                Log.i("GBR", associatedAxisLabels[num_mod].get(maxidx));
 
             }
 //            } catch (IOException e1) {
