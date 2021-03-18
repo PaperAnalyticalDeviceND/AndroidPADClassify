@@ -259,6 +259,9 @@ public class MainActivity extends AppCompatActivity {
             bm = Bitmap.createBitmap(bm, 71, 359, 636, 490);
             //Log.i("GBR", String.valueOf(bm.getWidth()));
 
+            // create output string
+            String output_string = new String();
+
             // categorize for each model in list
             for(int num_mod=0; num_mod < number_of_models; num_mod++) {
                 //final int num_mod = 0;
@@ -275,6 +278,11 @@ public class MainActivity extends AppCompatActivity {
                     float[] probArray = probabilityBuffer[num_mod].getFloatArray();
                     int maxidx = findMaxIndex(probArray);
 
+                    // concat to output string
+                    output_string += associatedAxisLabels[num_mod].get(maxidx);
+                    if(num_mod != number_of_models - 1)
+                        output_string += ", ";
+
                     // print results
                     Log.i("GBR", String.valueOf(probabilityBuffer[num_mod].getFloatArray()[0]));
                     Log.i("GBR", String.valueOf(probabilityBuffer[num_mod].getFloatArray()[maxidx]));
@@ -286,6 +294,8 @@ public class MainActivity extends AppCompatActivity {
 //                e1.printStackTrace();
 //            }
             }
+
+            Log.i("GBR", output_string + "%");
         }
         else if (requestCode == 11) {
             Log.i("GBR", "Calling from email done");
