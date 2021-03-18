@@ -226,7 +226,7 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 Log.i("GBR", "Raw missing");
             }
-            if (data.hasExtra("rectified")){
+            if (data.hasExtra("rectified")) {
                 rectifiedFile = new File(data.getExtras().getString("rectified"));
                 this.rectified = FileProvider.getUriForFile(getApplicationContext(), getApplicationContext().getPackageName(), new File(rectifiedFile.getPath()));
                 getApplicationContext().grantUriPermission(getApplicationContext().getPackageName(), this.rectified, Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -234,13 +234,13 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 Log.i("GBR", "Rectified missing");
             }
-            if (data.hasExtra("qr")){
+            if (data.hasExtra("qr")) {
                 this.qr = data.getExtras().getString("qr");
                 //Log.i("GBR", this.qr);
             } else {
                 Log.i("GBR", "QR missing");
             }
-            if (data.hasExtra("timestamp")){
+            if (data.hasExtra("timestamp")) {
                 this.timestamp = data.getExtras().getString("timestamp");
                 //Log.i("GBR", this.timestamp);
             } else {
@@ -250,52 +250,60 @@ public class MainActivity extends AppCompatActivity {
 
             /*
              Analysis code for every frame
-             Pre-process the image
+             post-process the image
             */
-            
+
             //try {
-            // crop input image
-            Bitmap bm = BitmapFactory.decodeFile(rectifiedFile.getPath());
-            bm = Bitmap.createBitmap(bm, 71, 359, 636, 490);
-            //Log.i("GBR", String.valueOf(bm.getWidth()));
+            if (rectifiedFile != null) {
+                // crop input image
+                Bitmap bm = BitmapFactory.decodeFile(rectifiedFile.getPath());
+                bm = Bitmap.createBitmap(bm, 71, 359, 636, 490);
+                //Log.i("GBR", String.valueOf(bm.getWidth()));
 
-            // create output string
-            String output_string = new String();
+                // create output string
+                String output_string = new String();
 
-            // categorize for each model in list
-            for(int num_mod=0; num_mod < number_of_models; num_mod++) {
-                //final int num_mod = 0;
+                // categorize for each model in list
+                for (int num_mod = 0; num_mod < number_of_models; num_mod++) {
+                    //final int num_mod = 0;
 
-                // InputStream bitmap=getAssets().open("test_4.png");
-                // Bitmap bit = BitmapFactory.decodeStream(bitmap);
-                tImage[num_mod].load(bm);
-                tImage[num_mod] = imageProcessor[num_mod].process(tImage[num_mod]);
+                    // InputStream bitmap=getAssets().open("test_4.png");
+                    // Bitmap bit = BitmapFactory.decodeStream(bitmap);
+                    tImage[num_mod].load(bm);
+                    tImage[num_mod] = imageProcessor[num_mod].process(tImage[num_mod]);
 
-                // Running inference
-                if (null != tflite[num_mod]) {
-                    // categorize
-                    tflite[num_mod].run(tImage[num_mod].getBuffer(), probabilityBuffer[num_mod].getBuffer());
-                    float[] probArray = probabilityBuffer[num_mod].getFloatArray();
-                    int maxidx = findMaxIndex(probArray);
+                    // Running inference
+                    if (null != tflite[num_mod]) {
+                        // categorize
+                        tflite[num_mod].run(tImage[num_mod].getBuffer(), probabilityBuffer[num_mod].getBuffer());
+                        float[] probArray = probabilityBuffer[num_mod].getFloatArray();
+                        int maxidx = findMaxIndex(probArray);
 
-                    // concat to output string
-                    output_string += associatedAxisLabels[num_mod].get(maxidx);
-                    if(num_mod != number_of_models - 1)
-                        output_string += ", ";
+                        // concat to output string
+                        output_string += associatedAxisLabels[num_mod].get(maxidx);
+                        if (num_mod != number_of_models - 1)
+                            output_string += ", ";
 
-                    // print results
-                    Log.i("GBR", String.valueOf(probabilityBuffer[num_mod].getFloatArray()[0]));
-                    Log.i("GBR", String.valueOf(probabilityBuffer[num_mod].getFloatArray()[maxidx]));
-                    Log.i("GBR", associatedAxisLabels[num_mod].get(maxidx));
+                        // print results
+                        Log.i("GBR", String.valueOf(probabilityBuffer[num_mod].getFloatArray()[0]));
+                        Log.i("GBR", String.valueOf(probabilityBuffer[num_mod].getFloatArray()[maxidx]));
+                        Log.i("GBR", associatedAxisLabels[num_mod].get(maxidx));
 
-                }
+                    }
 //            } catch (IOException e1) {
 //                // TODO Auto-generated catch block
 //                e1.printStackTrace();
 //            }
-            }
+                }
 
-            Log.i("GBR", output_string + "%");
+                // TODO: This is a temporary output position
+                // Use % input for long term
+                AutoCompleteTextView textView1 = (AutoCompleteTextView)
+                        findViewById(R.id.batchAuto);
+                textView1.setText("Drug: " + output_string + "%");
+
+                Log.i("GBR", output_string + "%");
+            }
         }
         else if (requestCode == 11) {
             Log.i("GBR", "Calling from email done");
