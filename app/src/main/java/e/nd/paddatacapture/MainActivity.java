@@ -61,7 +61,7 @@ import java.io.InputStreamReader;
 import java.io.BufferedReader;
 
 public class MainActivity extends AppCompatActivity {
-    static final String PROJECT = "FHI2020";
+    static final String PROJECT = "FHI360-App";
     SharedPreferences preferences;
     Uri raw = null;
     Uri rectified = null;
