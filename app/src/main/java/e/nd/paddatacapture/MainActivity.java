@@ -509,8 +509,8 @@ public class MainActivity extends AppCompatActivity {
             if(this.cDir == null){
                 this.cDir = this.getExternalCacheDir();
             }
-            File outputFile = new File(this.cDir, "data.json");
-            //File outputFile = File.createTempFile("data", ".json", this.cDir);
+            //File outputFile = new File(this.cDir, "data.json");
+            File outputFile = File.createTempFile("data", ".json", this.cDir);
             JSONObject jsonObject = new JSONObject();
             String compressedNotes = "batch=";
             compressedNotes += getBatch();
