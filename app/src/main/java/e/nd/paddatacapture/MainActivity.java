@@ -221,8 +221,8 @@ public class MainActivity extends AppCompatActivity {
                 getApplicationContext().grantUriPermission(getApplicationContext().getPackageName(), this.raw, Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 //TODO: Fragile as hell, add error checks
                 String path = file.getPath().replace("original.png", "");
-                this.cDir = new File(path);
-                Log.i("GBR", this.cDir.toString());
+                //this.cDir = getCacheDir(); //new File(path);
+                //Log.i("GBR", this.cDir.toString());
             } else {
                 Log.i("GBR", "Raw missing");
             }
@@ -497,6 +497,7 @@ public class MainActivity extends AppCompatActivity {
         emailIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, attachments);
         try {
             startActivityForResult(emailIntent, 11);
+            Log.i("GBR", "Email client found");
         } catch (android.content.ActivityNotFoundException ex) {
             Log.i("GBR", "No email clients found");
         }
@@ -505,7 +506,11 @@ public class MainActivity extends AppCompatActivity {
     private Uri buildJSON() {
         Uri ret = Uri.EMPTY;
         try {
+            if(this.cDir == null){
+                this.cDir = this.getExternalCacheDir();
+            }
             File outputFile = new File(this.cDir, "data.json");
+            //File outputFile = File.createTempFile("data", ".json", this.cDir);
             JSONObject jsonObject = new JSONObject();
             String compressedNotes = "batch=";
             compressedNotes += getBatch();
@@ -538,9 +543,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void saveData(View view) {
-        buildJSON();
-        Log.i("GBR", "Calling image capture from save");
-        startImageCapture();
+        Log.i("GBR", "Pr-email");
+        sendEmail(view);
+        //buildJSON();
+//        Log.i("GBR", "Calling image capture from save");
+//        startImageCapture();
     }
 
     public void discardData(View view) {
