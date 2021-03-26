@@ -93,15 +93,15 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.i("GBT", "onCreate");
-        this.preferences = initializePreferences("Testing");
-        setContentView(R.layout.activity_main);
-        Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
-        setSupportActionBar(myToolbar);
-        try {
-            SetUpInputs();
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+//        this.preferences = initializePreferences("Testing");
+//        setContentView(R.layout.activity_main);
+//        Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
+//        setSupportActionBar(myToolbar);
+//        try {
+//            SetUpInputs();
+//        } catch (JSONException e) {
+//            e.printStackTrace();
+//        }
 
         // Initialization code for TensorFlow Lite
         // Initialise the models
@@ -178,6 +178,17 @@ public class MainActivity extends AppCompatActivity {
             } catch (IOException e) {
                 Log.e("GBR", "Error reading model", e);
             }
+        }
+
+        // setup remainder
+        this.preferences = initializePreferences("Testing");
+        setContentView(R.layout.activity_main);
+        Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
+        setSupportActionBar(myToolbar);
+        try {
+            SetUpInputs();
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
 
     }
@@ -382,7 +393,12 @@ public class MainActivity extends AppCompatActivity {
             return sharedPreferences;
         } else {
             SharedPreferences.Editor editor = sharedPreferences.edit();
-            ArrayList<String> drugs = testDrugs;
+            ArrayList<String> drugs;
+            if( associatedAxisLabels[0].size() > 0 ) {
+                drugs = (ArrayList)associatedAxisLabels[0];
+            }else{
+                drugs = testDrugs;
+            }
             ArrayList<String> brands = testBrands;
             ArrayList<String> batches = testBatches;
             JSONObject obj = new JSONObject();
@@ -513,7 +529,7 @@ public class MainActivity extends AppCompatActivity {
             //File outputFile = new File(this.cDir, "data.json");
             File outputFile = File.createTempFile("data", ".json", this.cDir);
             JSONObject jsonObject = new JSONObject();
-            String compressedNotes = "drug=";
+            String compressedNotes = "Predicted drug =";
             compressedNotes += getBatch();
             compressedNotes += ", ";
             compressedNotes += getNotes();
