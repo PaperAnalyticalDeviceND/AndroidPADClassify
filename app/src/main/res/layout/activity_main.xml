@@ -43,7 +43,7 @@
         <Button
             android:id="@+id/button"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1"
             android:onClick="saveData"
             android:text="Save and Continue" />
@@ -148,14 +148,15 @@
             tools:layout_editor_absoluteX="136dp"
             tools:layout_editor_absoluteY="85dp" />
 
-        <AutoCompleteTextView
+        <TextView
             android:id="@+id/batchAuto"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="39dp"
             android:completionThreshold="0"
-            android:dropDownHeight="wrap_content"
             android:dropDownWidth="wrap_content"
+            android:dropDownHeight="wrap_content"
             android:selectAllOnFocus="true"
+            android:textStyle="bold"
             tools:layout_editor_absoluteX="132dp"
             tools:layout_editor_absoluteY="111dp" />
 

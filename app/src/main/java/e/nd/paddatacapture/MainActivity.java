@@ -298,9 +298,10 @@ public class MainActivity extends AppCompatActivity {
 
                 // TODO: This is a temporary output position
                 // Use % input for long term
-                AutoCompleteTextView textView1 = (AutoCompleteTextView)
+                TextView textView1 = (TextView)
                         findViewById(R.id.batchAuto);
-                textView1.setText("Drug: " + output_string + "%");
+                textView1.setTextSize(18);
+                textView1.setText("  " + output_string + "%");
 
                 Log.i("GBR", output_string + "%");
             }
@@ -361,10 +362,10 @@ public class MainActivity extends AppCompatActivity {
         String target3 = obj3.getString("Last");
         ArrayAdapter<String> adapter2 = new ArrayAdapter<String>(this,
                 android.R.layout.simple_selectable_list_item, batchList);
-        AutoCompleteTextView textView2 = (AutoCompleteTextView)
-                findViewById(R.id.batchAuto);
-        textView2.setAdapter(adapter2);
-        textView2.setText(target3);
+//        AutoCompleteTextView textView2 = (AutoCompleteTextView)
+//                findViewById(R.id.batchAuto);
+//        textView2.setAdapter(adapter2);
+//        textView2.setText(target3);
     }
 
     private SharedPreferences initializePreferences(String project){
@@ -458,7 +459,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String getBatch() {
-        AutoCompleteTextView textView1 = (AutoCompleteTextView)
+        TextView textView1 = (TextView)
                 findViewById(R.id.batchAuto);
         String ret = String.valueOf(textView1.getText());
         if(ret.isEmpty()){
@@ -512,7 +513,7 @@ public class MainActivity extends AppCompatActivity {
             //File outputFile = new File(this.cDir, "data.json");
             File outputFile = File.createTempFile("data", ".json", this.cDir);
             JSONObject jsonObject = new JSONObject();
-            String compressedNotes = "batch=";
+            String compressedNotes = "drug=";
             compressedNotes += getBatch();
             compressedNotes += ", ";
             compressedNotes += getNotes();
