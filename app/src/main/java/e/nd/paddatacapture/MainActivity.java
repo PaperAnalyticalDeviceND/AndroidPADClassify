@@ -352,9 +352,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void SetUpInputs() throws JSONException {
-        JSONObject obj = new JSONObject(this.preferences.getString("Drugs", ""));
-        ArrayList<String> drugList = getAll(obj);
-        String target = obj.getString("Last");
+        ArrayList<String> drugList;
+        String target;
+        if( associatedAxisLabels[0].size() > 0 ) {
+            drugList = (ArrayList) associatedAxisLabels[0];
+            target = associatedAxisLabels[0].get(0);
+        } else {
+            JSONObject obj = new JSONObject(this.preferences.getString("Drugs", ""));
+            drugList = getAll(obj);
+            target = obj.getString("Last");
+        }
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
                 android.R.layout.simple_spinner_dropdown_item, drugList);
         Spinner spinner = (Spinner)findViewById(R.id.drugSpinner);
@@ -396,8 +403,10 @@ public class MainActivity extends AppCompatActivity {
             ArrayList<String> drugs;
             if( associatedAxisLabels[0].size() > 0 ) {
                 drugs = (ArrayList)associatedAxisLabels[0];
+                Log.i("GBP", "set labels");
             }else{
                 drugs = testDrugs;
+                Log.i("GBP", "Standard labels");
             }
             ArrayList<String> brands = testBrands;
             ArrayList<String> batches = testBatches;
@@ -552,7 +561,7 @@ public class MainActivity extends AppCompatActivity {
             Log.i("GBR", outputFile.getPath());
             Log.i("GBR", getApplicationContext().getPackageName());
             ret = FileProvider.getUriForFile(getApplicationContext(), getApplicationContext().getPackageName(), new File(outputFile.getPath()));
-            getApplicationContext().grantUriPermission(getApplicationContext().getPackageName(), ret, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            //getApplicationContext().grantUriPermission(getApplicationContext().getPackageName(), ret, Intent.FLAG_GRANT_READ_URI_PERMISSION);
         } catch (IOException e) {
             e.printStackTrace();
         }
