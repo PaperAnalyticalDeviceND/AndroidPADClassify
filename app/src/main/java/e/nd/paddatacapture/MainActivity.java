@@ -238,7 +238,7 @@ public class MainActivity extends AppCompatActivity {
 
                     Intent intent = new Intent(this, ResultActivity.class);
                     intent.setData(Uri.fromFile(rectifiedFile));
-                    intent.putExtra(EXTRA_PREDICTED, output_string);
+                    intent.putExtra(EXTRA_PREDICTED, output_string + "%");
                     if (data.hasExtra("qr"))  intent.putExtra(EXTRA_SAMPLEID, data.getExtras().getString("qr"));
                     if (data.hasExtra("timestamp")) intent.putExtra(EXTRA_TIMESTAMP, timestamp);
                     if( associatedAxisLabels[0].size() > 0 ) intent.putExtra(EXTRA_LABEL_DRUGS, (String[]) associatedAxisLabels[0].toArray(new String[0]));
