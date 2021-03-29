@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class ResultActivity extends AppCompatActivity {
-    SharedPreferences mPreferences = getSharedPreferences(MainActivity.PROJECT, MODE_PRIVATE);
+    SharedPreferences mPreferences = null;
 
     String qr = "";
     String timestamp = "";
@@ -35,6 +35,9 @@ public class ResultActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_result);
+
+        // Setup Preferences
+        mPreferences = getSharedPreferences(MainActivity.PROJECT, MODE_PRIVATE);
 
         // Setup compatability toolbar
         Toolbar myToolbar = findViewById(R.id.my_toolbar);
