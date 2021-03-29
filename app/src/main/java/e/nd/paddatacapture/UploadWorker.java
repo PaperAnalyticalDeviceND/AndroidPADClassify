@@ -67,6 +67,7 @@ public class UploadWorker extends Worker {
             sbParams.append("api_key").append("=").append(URLEncoder.encode("D5HDZG76N3ICA3GBUYWC", "UTF-8")).append("&");
             sbParams.append("category_name").append("=").append(URLEncoder.encode("JCSTest", "UTF-8")).append("&");
             sbParams.append("camera1").append("=").append(URLEncoder.encode(Build.MANUFACTURER + " " + Build.MODEL, "UTF-8")).append("&");
+            sbParams.append("test_name").append("=").append(URLEncoder.encode("12LanePADKenya2015", "UTF-8")).append("&");
 
             String sampleName = getInputData().getString("SAMPLE_NAME");
             if (sampleName == null ){
