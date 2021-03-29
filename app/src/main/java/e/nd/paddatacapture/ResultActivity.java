@@ -16,6 +16,7 @@ import androidx.work.WorkManager;
 import androidx.work.WorkRequest;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -131,9 +132,14 @@ public class ResultActivity extends AppCompatActivity {
 
         WorkManager.getInstance(this).enqueue(myUploadWork);
 
-        Toast.makeText(this, "Results added to upload queue", 2).show();
+        Toast.makeText(this, "Results added to upload queue", 1).show();
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                finish();
+            }
+        }, 1250);
 
-        finish();
         /*
         Intent emailIntent = new Intent(Intent.ACTION_SEND_MULTIPLE);
         emailIntent.setType("message/rfc822");
