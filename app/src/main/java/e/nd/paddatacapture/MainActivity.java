@@ -27,7 +27,10 @@ import android.widget.Toast;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.DateFormat;
@@ -59,6 +62,8 @@ import android.graphics.BitmapFactory;
 
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 public class MainActivity extends AppCompatActivity {
     static final String PROJECT = "FHI360-App";
@@ -220,101 +225,88 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void UncompressOutputs( InputStream fin, File targetDirectory ) throws Exception {
+        byte[] buffer = new byte[4096];
+        try (BufferedInputStream bis = new BufferedInputStream(fin); ZipInputStream stream = new ZipInputStream(bis)) {
+            ZipEntry entry;
+            while ((entry = stream.getNextEntry()) != null) {
+                try (FileOutputStream fos = new FileOutputStream(targetDirectory.getPath() + "/" + entry.getName());
+                     BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length)) {
+
+                    int len;
+                    while ((len = stream.read(buffer)) > 0) {
+                        bos.write(buffer, 0, len);
+                    }
+                }
+            }
+        }
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.i("GBT", "onActivityResult");
         if (resultCode == RESULT_OK && requestCode == 10) {
-            File rectifiedFile = null;
-            Log.i("GBR", data.toString());
-            if (data.hasExtra("raw")) {
-                File file = new File(data.getExtras().getString("raw"));
-                this.raw = FileProvider.getUriForFile(getApplicationContext(), getApplicationContext().getPackageName(), new File(file.getPath()));
-                getApplicationContext().grantUriPermission(getApplicationContext().getPackageName(), this.raw, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                //TODO: Fragile as hell, add error checks
-                String path = file.getPath().replace("original.png", "");
-                //this.cDir = getCacheDir(); //new File(path);
-                //Log.i("GBR", this.cDir.toString());
-            } else {
-                Log.i("GBR", "Raw missing");
-            }
-            if (data.hasExtra("rectified")) {
-                rectifiedFile = new File(data.getExtras().getString("rectified"));
-                this.rectified = FileProvider.getUriForFile(getApplicationContext(), getApplicationContext().getPackageName(), new File(rectifiedFile.getPath()));
-                getApplicationContext().grantUriPermission(getApplicationContext().getPackageName(), this.rectified, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                Log.i("GBR", rectifiedFile.toString());
-            } else {
-                Log.i("GBR", "Rectified missing");
-            }
+            Uri resultData = data.getData();
             if (data.hasExtra("qr")) {
                 this.qr = data.getExtras().getString("qr");
-                //Log.i("GBR", this.qr);
             } else {
                 Log.i("GBR", "QR missing");
             }
+
             if (data.hasExtra("timestamp")) {
                 this.timestamp = data.getExtras().getString("timestamp");
-                //Log.i("GBR", this.timestamp);
             } else {
                 Log.i("GBR", "Timestamp missing");
             }
             updateExternalData();
 
-            /*
-             Analysis code for every frame
-             post-process the image
-            */
+            if (resultData != null) {
+                try {
+                    UncompressOutputs(getContentResolver().openInputStream(resultData), this.getCacheDir());
 
-            //try {
-            if (rectifiedFile != null) {
-                // crop input image
-                Bitmap bm = BitmapFactory.decodeFile(rectifiedFile.getPath());
-                bm = Bitmap.createBitmap(bm, 71, 359, 636, 490);
-                //Log.i("GBR", String.valueOf(bm.getWidth()));
+                    File rectifiedFile = new File(this.getCacheDir(), "rectified.png");
+                    // crop input image
+                    Bitmap bm = BitmapFactory.decodeFile(rectifiedFile.getPath());
+                    bm = Bitmap.createBitmap(bm, 71, 359, 636, 490);
 
-                // create output string
-                String output_string = new String();
+                    // create output string
+                    String output_string = new String();
 
-                // categorize for each model in list
-                for (int num_mod = 0; num_mod < number_of_models; num_mod++) {
-                    //final int num_mod = 0;
+                    // categorize for each model in list
+                    for (int num_mod = 0; num_mod < number_of_models; num_mod++) {
+                        tImage[num_mod].load(bm);
+                        tImage[num_mod] = imageProcessor[num_mod].process(tImage[num_mod]);
 
-                    // InputStream bitmap=getAssets().open("test_4.png");
-                    // Bitmap bit = BitmapFactory.decodeStream(bitmap);
-                    tImage[num_mod].load(bm);
-                    tImage[num_mod] = imageProcessor[num_mod].process(tImage[num_mod]);
+                        // Running inference
+                        if (null != tflite[num_mod]) {
+                            // categorize
+                            tflite[num_mod].run(tImage[num_mod].getBuffer(), probabilityBuffer[num_mod].getBuffer());
+                            float[] probArray = probabilityBuffer[num_mod].getFloatArray();
+                            int maxidx = findMaxIndex(probArray);
 
-                    // Running inference
-                    if (null != tflite[num_mod]) {
-                        // categorize
-                        tflite[num_mod].run(tImage[num_mod].getBuffer(), probabilityBuffer[num_mod].getBuffer());
-                        float[] probArray = probabilityBuffer[num_mod].getFloatArray();
-                        int maxidx = findMaxIndex(probArray);
+                            // concat to output string
+                            output_string += associatedAxisLabels[num_mod].get(maxidx);
+                            if (num_mod != number_of_models - 1) {
+                                output_string += ", ";
+                            }
 
-                        // concat to output string
-                        output_string += associatedAxisLabels[num_mod].get(maxidx);
-                        if (num_mod != number_of_models - 1)
-                            output_string += ", ";
-
-                        // print results
-                        Log.i("GBR", String.valueOf(probabilityBuffer[num_mod].getFloatArray()[0]));
-                        Log.i("GBR", String.valueOf(probabilityBuffer[num_mod].getFloatArray()[maxidx]));
-                        Log.i("GBR", associatedAxisLabels[num_mod].get(maxidx));
-
+                            // print results
+                            Log.i("GBR", String.valueOf(probabilityBuffer[num_mod].getFloatArray()[0]));
+                            Log.i("GBR", String.valueOf(probabilityBuffer[num_mod].getFloatArray()[maxidx]));
+                            Log.i("GBR", associatedAxisLabels[num_mod].get(maxidx));
+                        }
                     }
-//            } catch (IOException e1) {
-//                // TODO Auto-generated catch block
-//                e1.printStackTrace();
-//            }
+
+                    // TODO: This is a temporary output position
+                    // Use % input for long term
+                    TextView textView1 = (TextView)findViewById(R.id.batchAuto);
+                    textView1.setTextSize(18);
+                    textView1.setText("  " + output_string + "%");
+
+                    Log.i("GBR", output_string + "%");
+                }catch (Exception e){
+                    e.printStackTrace();
                 }
-
-                // TODO: This is a temporary output position
-                // Use % input for long term
-                TextView textView1 = (TextView)
-                        findViewById(R.id.batchAuto);
-                textView1.setTextSize(18);
-                textView1.setText("  " + output_string + "%");
-
-                Log.i("GBR", output_string + "%");
             }
         }
         else if (requestCode == 11) {
@@ -322,7 +314,6 @@ public class MainActivity extends AppCompatActivity {
             startImageCapture();
         }
 
-        //
         Log.i("GBR", String.valueOf(resultCode));
         Log.i("GBR", String.valueOf(requestCode));
     }
