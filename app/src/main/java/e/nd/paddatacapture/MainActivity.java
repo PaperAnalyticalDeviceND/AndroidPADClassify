@@ -396,11 +396,11 @@ public class MainActivity extends AppCompatActivity {
                 drugs = (ArrayList)associatedAxisLabels[0];
                 Log.i("GBP", "set labels");
             }else{
-                drugs = testDrugs;
+                drugs = Defaults.Drugs;
                 Log.i("GBP", "Standard labels");
             }
-            ArrayList<String> brands = testBrands;
-            ArrayList<String> batches = testBatches;
+            ArrayList<String> brands = Defaults.Brands;
+            ArrayList<String> batches = Defaults.Batches;
             JSONObject obj = new JSONObject();
             try {
                 obj.put("Last", "unknown");
@@ -580,47 +580,6 @@ public class MainActivity extends AppCompatActivity {
         }
         return outS;
     }
-
-    private static final ArrayList<String> testDrugs = new ArrayList<String>(){{
-        add("unknown");
-        add("albendazole");
-        add("amoxicillin");
-        add("ampicillin");
-        add("ascorbic acid");
-        add("azithromycin");
-        add("benzyl penicillin");
-        add("calcium carbonate");
-        add("ceftriaxone");
-        add("chloroquine");
-        add("ciprofloxacin");
-        add("doxycycline");
-        add("epinephrine");
-        add("ethambutol");
-        add("ferrous sulfate");
-        add("hydroxychloroquine");
-        add("isoniazid");
-        add("RI (rifampicin/isoniazid)");
-        add("lactose");
-        add("promethazine hydrochloride");
-        add("pyrazinamide");
-        add("rifampicin");
-        add("RIPE");
-        add("starch (maize)");
-        add("sulfamethoxazole");
-        add("talc");
-        add("tetracycline");
-    }};
-
-    private static final ArrayList<String> testBrands = new ArrayList<String>(){{
-        add("100%");
-        add("80%");
-        add("50%");
-        add("20%");
-    }};
-
-    private static final ArrayList<String> testBatches = new ArrayList<String>(){{
-        add("n/a");
-    }};
 
     private static final int findMaxIndex(float [] arr) {
         float max = arr[0];
