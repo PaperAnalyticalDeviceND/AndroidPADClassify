@@ -68,10 +68,10 @@ import java.util.zip.ZipInputStream;
 public class MainActivity extends AppCompatActivity {
     static final String PROJECT = "FHI360-App";
 
-    SharedPreferences preferences;
-
-    String qr = null;
-    String timestamp = null;
+    public static final String EXTRA_SAMPLEID = "e.nd.paddatacapture.EXTRA_SAMPLEID";
+    public static final String EXTRA_TIMESTAMP = "e.nd.paddatacapture.EXTRA_TIMESTAMP";
+    public static final String EXTRA_PREDICTED = "e.nd.paddatacapture.EXTRA_PREDICTED";
+    public static final String EXTRA_LABEL_DRUGS = "e.nd.paddatacapture.EXTRA_LABEL_DRUGS";
 
     // NN storage, now setting up array for multiple NN
     final int number_of_models = 2;
@@ -96,7 +96,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.i("GBT", "onCreate");
 
         // Initialization code for TensorFlow Lite
         // Initialise the models
@@ -168,22 +167,11 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // setup remainder
-        this.preferences = initializePreferences("Testing");
         setContentView(R.layout.activity_main);
-        Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
-        setSupportActionBar(myToolbar);
-        try {
-            SetUpInputs();
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
     }
 
-    private void startImageCapture(){
+    public void startImageCapture(View view){
         Log.i("GBR", "Image capture starting");
-        if(this.qr != null) {
-            Log.i("GBR", this.qr);
-        }
         if ((ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)  != PackageManager.PERMISSION_GRANTED)
                 | (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 90);
@@ -196,13 +184,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        Log.i("GBT", "onResume");
-        if(this.qr == null){
-            Log.i("GBR", "Calling image capture from start");
-            startImageCapture();
-        } else {
-            Log.i("GBR", "Tried to call image capture when I shouldn't have. ;)");
-        }
     }
 
     private void UncompressOutputs( InputStream fin, File targetDirectory ) throws Exception {
@@ -232,24 +213,6 @@ public class MainActivity extends AppCompatActivity {
                     UncompressOutputs(getContentResolver().openInputStream(resultData), this.getCacheDir());
 
                     File rectifiedFile = new File(this.getCacheDir(), "rectified.png");
-
-                    // Update UI
-                    ImageView imageView = findViewById(R.id.imageView);
-                    imageView.setImageURI(Uri.fromFile(rectifiedFile));
-
-                    if (data.hasExtra("qr")) {
-                        this.qr = data.getExtras().getString("qr");
-
-                        TextView textView = findViewById(R.id.idText);
-                        textView.setText(parseQR(this.qr));
-                    }
-
-                    if (data.hasExtra("timestamp")) {
-                        this.timestamp = data.getExtras().getString("timestamp");
-                        TextView textView = findViewById(R.id.timeText);
-
-                        textView.setText(this.timestamp);
-                    }
 
                     // crop input image
                     Bitmap bm = BitmapFactory.decodeFile(rectifiedFile.getPath());
@@ -283,11 +246,13 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
 
-                    // TODO: This is a temporary output position
-                    // Use % input for long term
-                    TextView textView1 = (TextView)findViewById(R.id.batchAuto);
-                    textView1.setTextSize(18);
-                    textView1.setText("  " + output_string + "%");
+                    Intent intent = new Intent(this, ResultActivity.class);
+                    intent.setData(Uri.fromFile(rectifiedFile));
+                    intent.putExtra(EXTRA_PREDICTED, output_string);
+                    if (data.hasExtra("qr"))  intent.putExtra(EXTRA_SAMPLEID, data.getExtras().getString("qr"));
+                    if (data.hasExtra("timestamp"))  intent.putExtra(EXTRA_TIMESTAMP, String.format("%d", data.getExtras().getLong("timestamp")));
+                    if( associatedAxisLabels[0].size() > 0 ) data.putExtra(EXTRA_LABEL_DRUGS, associatedAxisLabels[0].toArray());
+                    startActivity(intent);
 
                     Log.i("GBR", output_string + "%");
                 }catch (Exception e){
@@ -297,247 +262,11 @@ public class MainActivity extends AppCompatActivity {
         }
         else if (requestCode == 11) {
             Log.i("GBR", "Calling from email done");
-            startImageCapture();
+           // startImageCapture();
         }
 
         Log.i("GBR", String.valueOf(resultCode));
         Log.i("GBR", String.valueOf(requestCode));
-    }
-
-    private ArrayList<String> getAll(JSONObject obj) throws JSONException {
-        String str2 = (String) obj.get("All");
-        str2 = str2.replace("[", "");
-        str2 = str2.replace("]", "");
-        str2 = str2.replace(" ", "");
-        ArrayList<String> myList = new ArrayList<String>(Arrays.asList(str2.split(",")));
-        return myList;
-    }
-
-    private void SetUpInputs() throws JSONException {
-        ArrayList<String> drugList;
-        String target;
-        if( associatedAxisLabels[0].size() > 0 ) {
-            drugList = (ArrayList) associatedAxisLabels[0];
-            target = associatedAxisLabels[0].get(0);
-        } else {
-            JSONObject obj = new JSONObject(this.preferences.getString("Drugs", ""));
-            drugList = getAll(obj);
-            target = obj.getString("Last");
-        }
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
-                android.R.layout.simple_spinner_dropdown_item, drugList);
-        Spinner spinner = (Spinner)findViewById(R.id.drugSpinner);
-        spinner.setAdapter(adapter);
-        spinner.setSelection(adapter.getPosition(target));
-        JSONObject obj2 = new JSONObject(this.preferences.getString("Brands", ""));
-        ArrayList<String> brandList = getAll(obj2);
-        String target2 = obj2.getString("Last");
-        ArrayAdapter<String> adapter1 = new ArrayAdapter<String>(this,
-                android.R.layout.simple_spinner_dropdown_item, brandList);
-        Spinner spinner1 = (Spinner)findViewById(R.id.brandSpinner);
-        spinner1.setAdapter(adapter1);
-        spinner1.setSelection(adapter1.getPosition(target2));
-    }
-
-    private SharedPreferences initializePreferences(String project){
-        SharedPreferences sharedPreferences = getSharedPreferences(project, MODE_PRIVATE);
-        Boolean ready = sharedPreferences.getBoolean("Initialized", false);
-        if(ready){
-            try {
-                JSONObject obj = new JSONObject(sharedPreferences.getString("Drugs", ""));
-                ArrayList<String> myList = getAll(obj);
-                Log.i("GBP", myList.toString());
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            return sharedPreferences;
-        } else {
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            ArrayList<String> drugs;
-            if( associatedAxisLabels[0].size() > 0 ) {
-                drugs = (ArrayList)associatedAxisLabels[0];
-                Log.i("GBP", "set labels");
-            }else{
-                drugs = Defaults.Drugs;
-                Log.i("GBP", "Standard labels");
-            }
-            ArrayList<String> brands = Defaults.Brands;
-            ArrayList<String> batches = Defaults.Batches;
-            JSONObject obj = new JSONObject();
-            try {
-                obj.put("Last", "unknown");
-                obj.put("All", drugs);
-                editor.putString("Drugs", obj.toString());
-                obj.put("Last", "100%");
-                obj.put("All", brands);
-                editor.putString("Brands", obj.toString());
-                obj.put("Last", "n/a");
-                obj.put("All", batches);
-                editor.putString("Batches", obj.toString());
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            editor.putBoolean("Initialized", true);
-            editor.commit();
-            Log.i("GBP", "Initialized preferences for project");
-            Log.i("GBP", project);
-            return sharedPreferences;
-        }
-    }
-
-    private void savePreference(String selected, String category) {
-        JSONObject obj = null;
-        try {
-            obj = new JSONObject(this.preferences.getString(category, ""));
-            ArrayList<String> opts = getAll(obj);
-            Boolean present = opts.contains(selected);
-            Log.i("GBP", present.toString());
-            SharedPreferences.Editor editor = this.preferences.edit();
-            if(false == present){
-                opts.add(selected);
-                obj.put("All", opts);
-            }
-            obj.put("Last", selected);
-            editor.putString(category, obj.toString());
-            editor.commit();
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        Log.i("GBP", obj.toString());
-    }
-
-    private String getDrug() {
-        Spinner spinner = (Spinner)findViewById(R.id.drugSpinner);
-        String ret = String.valueOf(spinner.getSelectedItem());
-        savePreference(ret, "Drugs");
-        return ret;
-    }
-
-    private String getBrand() {
-        Spinner spinner = (Spinner)
-                findViewById(R.id.brandSpinner);
-        String ret = String.valueOf(spinner.getSelectedItem());
-        if(ret.isEmpty()){
-            ret = "100%";
-        }
-        savePreference(ret, "Brands");
-        return ret;
-    }
-
-    private int getPercentage(String raw) {
-        int ret = 100;
-        String trimmed = raw.substring(0, raw.length() - 1);
-        Log.i("GB", trimmed);
-        try {
-            ret = Integer.parseInt(trimmed);
-        } catch (NumberFormatException nfe){
-            Toast.makeText(this, nfe.toString(), Toast.LENGTH_LONG);
-        }
-        return ret;
-    }
-
-    private String getBatch() {
-        TextView textView1 = (TextView)
-                findViewById(R.id.batchAuto);
-        String ret = String.valueOf(textView1.getText());
-        if(ret.isEmpty()){
-            ret = "n/a";
-        }
-        ret = ret.toLowerCase();
-        savePreference(ret, "Batches");
-        return ret;
-    }
-
-    private String getNotes() {
-        EditText editText = (EditText) findViewById(R.id.editText);
-        String ret = String.valueOf(editText.getText());
-        return ret;
-    }
-
-    public void sendEmail(View view) {
-        Log.i("GB", "Button pushed");
-
-        Intent emailIntent = new Intent(Intent.ACTION_SEND_MULTIPLE);
-        emailIntent.setType("message/rfc822");
-        emailIntent.setType("application/image");
-        String[] target = {"paper.analytical.devices@gmail.com"};
-        Uri attachment = buildJSON();
-
-        Log.i("GB", attachment.toString());
-        ArrayList<Uri> attachments = new ArrayList<Uri>();
-        attachments.add(attachment);
-        attachments.add(FileProvider.getUriForFile(this, this.getApplicationContext().getPackageName() + ".provider", new File(this.getCacheDir(), "original.png")));
-        attachments.add(FileProvider.getUriForFile(this, this.getApplicationContext().getPackageName() + ".provider", new File(this.getCacheDir(), "rectified.png")));
-
-        emailIntent.putExtra(Intent.EXTRA_EMAIL, target);
-        emailIntent.putExtra(Intent.EXTRA_SUBJECT, "PADs");
-        emailIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        emailIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, attachments);
-        try {
-            startActivityForResult(emailIntent, 11);
-            Log.i("GBR", "Email client found");
-        } catch (android.content.ActivityNotFoundException ex) {
-            Log.i("GBR", "No email clients found");
-        }
-    }
-
-    private Uri buildJSON() {
-        Uri ret = Uri.EMPTY;
-        try {
-            File outputFile = File.createTempFile("data", ".json", this.getCacheDir());
-            JSONObject jsonObject = new JSONObject();
-            String compressedNotes = "Predicted drug =";
-            compressedNotes += getBatch();
-            compressedNotes += ", ";
-            compressedNotes += getNotes();
-            try {
-                jsonObject.accumulate("sample_name", getDrug());
-                jsonObject.accumulate("project_name", PROJECT);
-                jsonObject.accumulate("camera1", Build.MANUFACTURER + " " + Build.MODEL);
-                jsonObject.accumulate("sampleid", parseQR(this.qr));
-                jsonObject.accumulate("qr_string", this.qr);
-                jsonObject.accumulate("quantity", getPercentage(getBrand()));
-                jsonObject.accumulate("notes", compressedNotes);
-                jsonObject.accumulate("timestamp", this.timestamp);
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            FileWriter file = new FileWriter(outputFile);
-            file.write(jsonObject.toString());
-            file.flush();
-            file.close();
-            Log.i("GBR", outputFile.getPath());
-            Log.i("GBR", getApplicationContext().getPackageName());
-            ret = FileProvider.getUriForFile(this, this.getApplicationContext().getPackageName() + ".provider", outputFile);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return ret;
-    }
-
-    public void saveData(View view) {
-        Log.i("GBR", "Pr-email");
-        sendEmail(view);
-    }
-
-    public void discardData(View view) {
-        try {
-            SetUpInputs();
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        Log.i("GBR", "Calling image capture from discard");
-        startImageCapture();
-    }
-
-    public String parseQR(String qr) {
-        String outS = qr;
-        if (qr.startsWith("padproject.nd.edu/?s=")){
-            outS = qr.substring(21);
-        } else if (qr.startsWith("padproject.nd.edu/?t=")){
-            outS = qr.substring(21);
-        }
-        return outS;
     }
 
     private static final int findMaxIndex(float [] arr) {
