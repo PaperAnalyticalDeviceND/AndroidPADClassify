@@ -137,7 +137,7 @@ public class UploadWorker extends Worker {
             BufferedOutputStream bof = new BufferedOutputStream(conn.getOutputStream());
             InputStream sData = new ByteArrayInputStream(sbParams.toString().getBytes());
 
-            byte[] buffer = new byte[1024];
+            byte[] buffer = new byte[8096];
 
             int totalRead = 0;
 

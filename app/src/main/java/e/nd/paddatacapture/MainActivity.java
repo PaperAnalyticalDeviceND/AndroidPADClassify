@@ -44,6 +44,7 @@ import java.util.zip.ZipInputStream;
 
 public class MainActivity extends AppCompatActivity {
     static final String PROJECT = "FHI360-App";
+    public static boolean HoldCamera = false;
 
     public static final String EXTRA_SAMPLEID = "e.nd.paddatacapture.EXTRA_SAMPLEID";
     public static final String EXTRA_TIMESTAMP = "e.nd.paddatacapture.EXTRA_TIMESTAMP";
@@ -161,6 +162,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        if( !HoldCamera ) {
+            startImageCapture(null);
+        }
     }
 
     private void UncompressOutputs( InputStream fin, File targetDirectory ) throws Exception {
@@ -240,15 +244,13 @@ public class MainActivity extends AppCompatActivity {
                     if( associatedAxisLabels[0].size() > 0 ) intent.putExtra(EXTRA_LABEL_DRUGS, (String[]) associatedAxisLabels[0].toArray(new String[0]));
                     startActivity(intent);
 
+                    HoldCamera = true;
+
                     Log.i("GBR", output_string + "%");
                 }catch (Exception e){
                     e.printStackTrace();
                 }
             }
-        }
-        else if (requestCode == 11) {
-            Log.i("GBR", "Calling from email done");
-           // startImageCapture();
         }
 
         Log.i("GBR", String.valueOf(resultCode));

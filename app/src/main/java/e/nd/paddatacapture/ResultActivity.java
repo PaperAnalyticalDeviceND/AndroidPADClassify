@@ -95,6 +95,12 @@ public class ResultActivity extends AppCompatActivity {
         sBrands.setSelection(aBrands.getPosition(mPreferences.getString("Brand", Defaults.Brands.get(0))));
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        MainActivity.HoldCamera = false;
+    }
+
     public void saveData(View view) {
         Log.i("GB", "Button pushed");
 
