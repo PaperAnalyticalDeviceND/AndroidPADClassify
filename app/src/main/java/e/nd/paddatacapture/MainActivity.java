@@ -251,7 +251,7 @@ public class MainActivity extends AppCompatActivity {
                     intent.putExtra(EXTRA_PREDICTED, output_string);
                     if (data.hasExtra("qr"))  intent.putExtra(EXTRA_SAMPLEID, data.getExtras().getString("qr"));
                     if (data.hasExtra("timestamp"))  intent.putExtra(EXTRA_TIMESTAMP, String.format("%d", data.getExtras().getLong("timestamp")));
-                    if( associatedAxisLabels[0].size() > 0 ) data.putExtra(EXTRA_LABEL_DRUGS, associatedAxisLabels[0].toArray());
+                    if( associatedAxisLabels[0].size() > 0 ) intent.putExtra(EXTRA_LABEL_DRUGS, associatedAxisLabels[0].toArray());
                     startActivity(intent);
 
                     Log.i("GBR", output_string + "%");
