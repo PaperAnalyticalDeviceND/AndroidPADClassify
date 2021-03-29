@@ -67,12 +67,11 @@ import java.util.zip.ZipInputStream;
 
 public class MainActivity extends AppCompatActivity {
     static final String PROJECT = "FHI360-App";
+
     SharedPreferences preferences;
-    Uri raw = null;
-    Uri rectified = null;
+
     String qr = null;
     String timestamp = null;
-    File cDir = null;
 
     // NN storage, now setting up array for multiple NN
     final int number_of_models = 2;
@@ -81,41 +80,30 @@ public class MainActivity extends AppCompatActivity {
     ImageProcessor[] imageProcessor = {null, null};
     TensorImage[] tImage =  {null, null};
     TensorBuffer[] probabilityBuffer = {null, null};
+
     /** An instance of the driver class to run model inference with Tensorflow Lite. */
-    // TODO: Declare a TFLite interpreter
     protected Interpreter[] tflite = {null, null};
 
     /** The loaded TensorFlow Lite model. */
     private MappedByteBuffer[] tfliteModel = {null, null};
+
     /** Options for configuring the Interpreter. */
     private final Interpreter.Options[] tfliteOptions = {new Interpreter.Options(), new Interpreter.Options()};
 
     final String[] ASSOCIATED_AXIS_LABELS = {"labels.txt", "labels.txt"};
-    //ArrayList<String> associatedAxisLabels = null;
     List<String>[] associatedAxisLabels = (ArrayList<String>[])new ArrayList[2];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.i("GBT", "onCreate");
-//        this.preferences = initializePreferences("Testing");
-//        setContentView(R.layout.activity_main);
-//        Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
-//        setSupportActionBar(myToolbar);
-//        try {
-//            SetUpInputs();
-//        } catch (JSONException e) {
-//            e.printStackTrace();
-//        }
 
         // Initialization code for TensorFlow Lite
         // Initialise the models
         for(int num_mod=0; num_mod < number_of_models; num_mod++) {
             //final int num_mod = 0;
             try {
-                tfliteModel[num_mod]
-                        = FileUtil.loadMappedFile(this,
-                        model_list[num_mod]);
+                tfliteModel[num_mod] = FileUtil.loadMappedFile(this, model_list[num_mod]);
 
                 // does it have metadata?
                 MetadataExtractor metadata = new MetadataExtractor(tfliteModel[num_mod]);
@@ -129,7 +117,6 @@ public class MainActivity extends AppCompatActivity {
                     String line;
                     while ((line = r.readLine()) != null) {
                         associatedAxisLabels[num_mod].add(line);
-                        //Log.e("GBR", line);
                     }
 
                     // other metadata
@@ -138,7 +125,6 @@ public class MainActivity extends AppCompatActivity {
                     Log.e("GBR", mm.version());
 
                 } else {
-                    // load labels from file
                     try {
                         associatedAxisLabels[num_mod] = FileUtil.loadLabels(this, ASSOCIATED_AXIS_LABELS[num_mod]);
                     } catch (IOException e) {
@@ -150,23 +136,20 @@ public class MainActivity extends AppCompatActivity {
                 tflite[num_mod] = new Interpreter(tfliteModel[num_mod], tfliteOptions[num_mod]);
 
                 // Reads type and shape of input and output tensors, respectively.
-                // input
                 int imageTensorIndex = 0;
                 int[] imageShape = tflite[num_mod].getInputTensor(imageTensorIndex).shape(); // {1, 227, 227, 3}
                 DataType imageDataType = tflite[num_mod].getInputTensor(imageTensorIndex).dataType();
 
                 //output
                 int probabilityTensorIndex = 0;
+
                 // get output shape
-                int[] probabilityShape =
-                        tflite[num_mod].getOutputTensor(0).shape(); // {1, NUM_CLASSES}
-                Log.e("GBR", String.valueOf(probabilityShape[1]));
+                int[] probabilityShape =  tflite[num_mod].getOutputTensor(0).shape(); // {1, NUM_CLASSES}
                 DataType probabilityDataType = tflite[num_mod].getOutputTensor(probabilityTensorIndex).dataType();
 
                 // Create an ImageProcessor with all ops required. For more ops, please
                 // refer to the ImageProcessor Architecture section in this README.
-                imageProcessor[num_mod] =
-                        new ImageProcessor.Builder()
+                imageProcessor[num_mod] = new ImageProcessor.Builder()
                                 .add(new ResizeOp(imageShape[2], imageShape[1], ResizeOp.ResizeMethod.BILINEAR))
                                 .build();
 
@@ -176,8 +159,7 @@ public class MainActivity extends AppCompatActivity {
 
                 // Create a container for the result and specify that this is not a quantized model.
                 // Hence, the 'DataType' is defined as DataType.FLOAT32
-                probabilityBuffer[num_mod] =
-                        TensorBuffer.createFixedSize(probabilityShape, probabilityDataType);
+                probabilityBuffer[num_mod] = TensorBuffer.createFixedSize(probabilityShape, probabilityDataType);
                 //TensorBuffer.createFixedSize(new int[]{1, 10}, DataType.FLOAT32);
 
             } catch (IOException e) {
@@ -195,7 +177,6 @@ public class MainActivity extends AppCompatActivity {
         } catch (JSONException e) {
             e.printStackTrace();
         }
-
     }
 
     private void startImageCapture(){
@@ -203,9 +184,8 @@ public class MainActivity extends AppCompatActivity {
         if(this.qr != null) {
             Log.i("GBR", this.qr);
         }
-        if ((ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) | (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED)) {
+        if ((ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)  != PackageManager.PERMISSION_GRANTED)
+                | (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 90);
         } else {
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("pads://capture"));
@@ -247,24 +227,30 @@ public class MainActivity extends AppCompatActivity {
         Log.i("GBT", "onActivityResult");
         if (resultCode == RESULT_OK && requestCode == 10) {
             Uri resultData = data.getData();
-            if (data.hasExtra("qr")) {
-                this.qr = data.getExtras().getString("qr");
-            } else {
-                Log.i("GBR", "QR missing");
-            }
-
-            if (data.hasExtra("timestamp")) {
-                this.timestamp = data.getExtras().getString("timestamp");
-            } else {
-                Log.i("GBR", "Timestamp missing");
-            }
-            updateExternalData();
-
             if (resultData != null) {
                 try {
                     UncompressOutputs(getContentResolver().openInputStream(resultData), this.getCacheDir());
 
                     File rectifiedFile = new File(this.getCacheDir(), "rectified.png");
+
+                    // Update UI
+                    ImageView imageView = findViewById(R.id.imageView);
+                    imageView.setImageURI(Uri.fromFile(rectifiedFile));
+
+                    if (data.hasExtra("qr")) {
+                        this.qr = data.getExtras().getString("qr");
+
+                        TextView textView = findViewById(R.id.idText);
+                        textView.setText(parseQR(this.qr));
+                    }
+
+                    if (data.hasExtra("timestamp")) {
+                        this.timestamp = data.getExtras().getString("timestamp");
+                        TextView textView = findViewById(R.id.timeText);
+
+                        textView.setText(this.timestamp);
+                    }
+
                     // crop input image
                     Bitmap bm = BitmapFactory.decodeFile(rectifiedFile.getPath());
                     bm = Bitmap.createBitmap(bm, 71, 359, 636, 490);
@@ -318,21 +304,6 @@ public class MainActivity extends AppCompatActivity {
         Log.i("GBR", String.valueOf(requestCode));
     }
 
-    private void updateExternalData(){
-        if (this.rectified != null){
-            ImageView imageView = findViewById(R.id.imageView);
-            imageView.setImageURI(this.rectified);
-        }
-        if (this.timestamp != null){
-            TextView textView = findViewById(R.id.timeText);
-            textView.setText(this.timestamp);
-        }
-        if (this.qr != null){
-            TextView textView = findViewById(R.id.idText);
-            textView.setText(parseQR(this.qr));
-        }
-    }
-
     private ArrayList<String> getAll(JSONObject obj) throws JSONException {
         String str2 = (String) obj.get("All");
         str2 = str2.replace("[", "");
@@ -366,15 +337,6 @@ public class MainActivity extends AppCompatActivity {
         Spinner spinner1 = (Spinner)findViewById(R.id.brandSpinner);
         spinner1.setAdapter(adapter1);
         spinner1.setSelection(adapter1.getPosition(target2));
-        JSONObject obj3 = new JSONObject(this.preferences.getString("Batches", ""));
-        ArrayList<String> batchList = getAll(obj3);
-        String target3 = obj3.getString("Last");
-        ArrayAdapter<String> adapter2 = new ArrayAdapter<String>(this,
-                android.R.layout.simple_selectable_list_item, batchList);
-//        AutoCompleteTextView textView2 = (AutoCompleteTextView)
-//                findViewById(R.id.batchAuto);
-//        textView2.setAdapter(adapter2);
-//        textView2.setText(target3);
     }
 
     private SharedPreferences initializePreferences(String project){
@@ -522,10 +484,7 @@ public class MainActivity extends AppCompatActivity {
     private Uri buildJSON() {
         Uri ret = Uri.EMPTY;
         try {
-            if(this.cDir == null){
-                this.cDir = this.getCacheDir();
-            }
-            File outputFile = File.createTempFile("data", ".json", this.cDir);
+            File outputFile = File.createTempFile("data", ".json", this.getCacheDir());
             JSONObject jsonObject = new JSONObject();
             String compressedNotes = "Predicted drug =";
             compressedNotes += getBatch();
