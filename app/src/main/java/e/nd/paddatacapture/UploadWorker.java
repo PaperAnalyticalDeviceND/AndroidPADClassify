@@ -1,22 +1,31 @@
 package e.nd.paddatacapture;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
+import android.os.SystemClock;
 import android.util.Base64;
-import android.util.Base64OutputStream;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.core.app.NotificationCompat;
+import androidx.work.ForegroundInfo;
+import androidx.work.WorkManager;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -26,9 +35,15 @@ import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import static android.content.Context.MODE_PRIVATE;
+import static android.content.Context.NOTIFICATION_SERVICE;
+
 public class UploadWorker extends Worker {
+    private NotificationManager notificationManager;
+
     public UploadWorker(@NonNull Context context, @NonNull WorkerParameters params) {
         super(context, params);
+        notificationManager = (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
     }
 
     @Override
@@ -103,6 +118,8 @@ public class UploadWorker extends Worker {
             e.printStackTrace();
         }
 
+        setForegroundAsync(createForegroundInfo(0, sbParams.length()));
+
         // Send Data
         try{
             URL urlObj = new URL(builder.build().toString());
@@ -117,12 +134,22 @@ public class UploadWorker extends Worker {
             conn.setConnectTimeout(15000);
             conn.connect();
 
-            String paramsString = sbParams.toString();
+            BufferedOutputStream bof = new BufferedOutputStream(conn.getOutputStream());
+            InputStream sData = new ByteArrayInputStream(sbParams.toString().getBytes());
 
-            DataOutputStream wr = new DataOutputStream(conn.getOutputStream());
-            wr.writeBytes(paramsString);
-            wr.flush();
-            wr.close();
+            byte[] buffer = new byte[1024];
+
+            int totalRead = 0;
+
+            int bytesRead;
+            while ((bytesRead = sData.read(buffer)) != -1) {
+                bof.write(buffer, 0, bytesRead);
+                bof.flush();
+                totalRead += bytesRead;
+                setForegroundAsync(createForegroundInfo(totalRead, sbParams.length()));
+            }
+            bof.close();
+            sData.close();
 
             Log.i("Test", String.format("%d", conn.getResponseCode()));
 
@@ -145,8 +172,37 @@ public class UploadWorker extends Worker {
             file.delete();
         }
 
+        setForegroundAsync(createForegroundInfo(0, 0));
+
         // Indicate whether the work finished successfully with the Result
         return Result.success();
+    }
+
+    @NonNull
+    private ForegroundInfo createForegroundInfo(int current, int max) {
+        Context context = getApplicationContext();
+
+        PendingIntent intent = WorkManager.getInstance(context).createCancelPendingIntent(getId());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            createChannel();
+        }
+
+        Notification notification = new NotificationCompat.Builder(context, MainActivity.PROJECT)
+                .setOngoing(true)
+                .setContentTitle("Data Upload")
+                .setProgress(max, current, false)
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .addAction(android.R.drawable.ic_delete, "Cancel", intent)
+                .build();
+
+        return new ForegroundInfo(this.hashCode(), notification);
+    }
+
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private void createChannel() {
+        NotificationChannel channel = new NotificationChannel(MainActivity.PROJECT, "Upload", NotificationManager.IMPORTANCE_LOW);
+        notificationManager.createNotificationChannel(channel);
     }
 
     private String FileToBase64(Uri path) {
