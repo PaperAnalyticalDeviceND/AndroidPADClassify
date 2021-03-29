@@ -225,10 +225,13 @@ public class MainActivity extends AppCompatActivity {
 
                             // concat to output string
                             output_string += associatedAxisLabels[num_mod].get(maxidx);
+                            if( num_mod == 0 ){
+                                output_string += String.format(" (%.3f)", probabilityBuffer[num_mod].getFloatArray()[maxidx]);
+                            }
+
                             if (num_mod != number_of_models - 1) {
                                 output_string += ", ";
                             }
-
                             // print results
                             Log.i("GBR", String.valueOf(probabilityBuffer[num_mod].getFloatArray()[0]));
                             Log.i("GBR", String.valueOf(probabilityBuffer[num_mod].getFloatArray()[maxidx]));
