@@ -4,10 +4,18 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
-import android.support.v4.content.FileProvider;
-import android.support.v7.app.AppCompatActivity;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.FileProvider;
+import androidx.work.Constraints;
+import androidx.work.Data;
+import androidx.work.NetworkType;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
+import androidx.work.WorkRequest;
+
 import android.os.Bundle;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -67,7 +75,7 @@ public class ResultActivity extends AppCompatActivity {
         // Handle Drug List
         String tDrugs = "";
         ArrayAdapter<String> aDrugs = null;
-        if( intent.hasExtra(MainActivity.EXTRA_LABEL_DRUGS) ) {
+        if( intent.hasExtra(MainActivity.EXTRA_LABEL_DRUGS) && intent.getStringArrayExtra(MainActivity.EXTRA_LABEL_DRUGS) != null ) {
             String[] drugs = intent.getStringArrayExtra(MainActivity.EXTRA_LABEL_DRUGS);
             aDrugs = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, drugs);
             tDrugs = drugs[0];
@@ -90,6 +98,35 @@ public class ResultActivity extends AppCompatActivity {
     public void saveData(View view) {
         Log.i("GB", "Button pushed");
 
+        String compressedNotes = "Predicted drug =";
+        compressedNotes += getBatch();
+        compressedNotes += ", ";
+        compressedNotes += getNotes();
+
+        Constraints constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.UNMETERED)
+                .build();
+
+        WorkRequest myUploadWork =  new OneTimeWorkRequest.Builder(UploadWorker.class)
+                .setConstraints(constraints)
+                .addTag("result_upload")
+                .setInputData(
+                    new Data.Builder()
+                            .putString("SAMPLE_NAME", getDrug())
+                            .putString("SAMPLE_ID", parseQR(this.qr))
+                            .putString("NOTES", compressedNotes)
+                            .putString("QUANTITY", getPercentage(getBrand()))
+                            .putString("TIMESTAMP", this.timestamp)
+                            .putString("ORIGINAL_IMAGE", FileProvider.getUriForFile(this, this.getApplicationContext().getPackageName() + ".provider", new File(new File(this.getFilesDir(), timestamp), "original.png")).toString())
+                            .putString("RECTIFIED_IMAGE", FileProvider.getUriForFile(this, this.getApplicationContext().getPackageName() + ".provider", new File(new File(this.getFilesDir(), timestamp), "rectified.png")).toString())
+                        .build()
+                )
+                .build();
+
+        WorkManager.getInstance(this).enqueue(myUploadWork);
+
+        finish();
+        /*
         Intent emailIntent = new Intent(Intent.ACTION_SEND_MULTIPLE);
         emailIntent.setType("message/rfc822");
         emailIntent.setType("application/image");
@@ -99,8 +136,8 @@ public class ResultActivity extends AppCompatActivity {
         Log.i("GB", attachment.toString());
         ArrayList<Uri> attachments = new ArrayList<Uri>();
         attachments.add(attachment);
-        attachments.add(FileProvider.getUriForFile(this, this.getApplicationContext().getPackageName() + ".provider", new File(this.getCacheDir(), "original.png")));
-        attachments.add(FileProvider.getUriForFile(this, this.getApplicationContext().getPackageName() + ".provider", new File(this.getCacheDir(), "rectified.png")));
+        attachments.add(FileProvider.getUriForFile(this, this.getApplicationContext().getPackageName() + ".provider", new File(new File(this.getFilesDir(), timestamp), "original.png")));
+        attachments.add(FileProvider.getUriForFile(this, this.getApplicationContext().getPackageName() + ".provider", new File(new File(this.getFilesDir(), timestamp), "rectified.png")));
 
         emailIntent.putExtra(Intent.EXTRA_EMAIL, target);
         emailIntent.putExtra(Intent.EXTRA_SUBJECT, "PADs");
@@ -111,7 +148,7 @@ public class ResultActivity extends AppCompatActivity {
             Log.i("GBR", "Email client found");
         } catch (android.content.ActivityNotFoundException ex) {
             Log.i("GBR", "No email clients found");
-        }
+        }*/
     }
 
     public void discardData(View view) {
@@ -170,15 +207,8 @@ public class ResultActivity extends AppCompatActivity {
         return ret;
     }
 
-    private int getPercentage(String raw) {
-        int ret = 100;
-        String trimmed = raw.substring(0, raw.length() - 1);
-        try {
-            ret = Integer.parseInt(trimmed);
-        } catch (NumberFormatException nfe){
-            Toast.makeText(this, nfe.toString(), Toast.LENGTH_LONG);
-        }
-        return ret;
+    private String getPercentage(String raw) {
+        return raw.substring(0, raw.length() - 1);
     }
 
     private String getBatch() {

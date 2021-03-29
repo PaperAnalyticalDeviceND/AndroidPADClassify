@@ -1,55 +1,32 @@
-package e.nd.paddatacapture;
+    package e.nd.paddatacapture;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.os.Build;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.content.FileProvider;
-import android.support.v7.app.AppCompatActivity;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
 import android.os.Bundle;
-import android.support.v7.widget.Toolbar;
-import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.View;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
-import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.Spinner;
-import android.widget.TextView;
-import android.widget.Toast;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
 
 import org.tensorflow.lite.support.image.ImageProcessor;
 import org.tensorflow.lite.support.image.TensorImage;
 import org.tensorflow.lite.support.image.ops.ResizeOp;
 import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
-import org.tensorflow.lite.support.model.Model;
 import org.tensorflow.lite.support.common.FileUtil;
 import org.tensorflow.lite.Interpreter;
-import org.tensorflow.lite.support.common.FileUtil;
-import org.tensorflow.lite.support.common.TensorProcessor;
-import org.tensorflow.lite.support.label.TensorLabel;
 import org.tensorflow.lite.support.metadata.MetadataExtractor;
 import org.tensorflow.lite.support.metadata.schema.ModelMetadata;
 
@@ -210,9 +187,18 @@ public class MainActivity extends AppCompatActivity {
             Uri resultData = data.getData();
             if (resultData != null) {
                 try {
-                    UncompressOutputs(getContentResolver().openInputStream(resultData), this.getCacheDir());
+                    // Create Output Directory
+                    String timestamp = "";
+                    if (data.hasExtra("timestamp")) timestamp = String.format("%d", data.getExtras().getLong("timestamp"));
 
-                    File rectifiedFile = new File(this.getCacheDir(), "rectified.png");
+                    File targetDir = new File(this.getFilesDir(), timestamp);
+                    targetDir.mkdirs();
+
+                    // Extract Files
+                    UncompressOutputs(getContentResolver().openInputStream(resultData), targetDir);
+
+                    // Handle rectified image
+                    File rectifiedFile = new File(targetDir, "rectified.png");
 
                     // crop input image
                     Bitmap bm = BitmapFactory.decodeFile(rectifiedFile.getPath());
@@ -250,8 +236,8 @@ public class MainActivity extends AppCompatActivity {
                     intent.setData(Uri.fromFile(rectifiedFile));
                     intent.putExtra(EXTRA_PREDICTED, output_string);
                     if (data.hasExtra("qr"))  intent.putExtra(EXTRA_SAMPLEID, data.getExtras().getString("qr"));
-                    if (data.hasExtra("timestamp"))  intent.putExtra(EXTRA_TIMESTAMP, String.format("%d", data.getExtras().getLong("timestamp")));
-                    if( associatedAxisLabels[0].size() > 0 ) intent.putExtra(EXTRA_LABEL_DRUGS, associatedAxisLabels[0].toArray());
+                    if (data.hasExtra("timestamp")) intent.putExtra(EXTRA_TIMESTAMP, timestamp);
+                    if( associatedAxisLabels[0].size() > 0 ) intent.putExtra(EXTRA_LABEL_DRUGS, (String[]) associatedAxisLabels[0].toArray(new String[0]));
                     startActivity(intent);
 
                     Log.i("GBR", output_string + "%");
