@@ -499,14 +499,13 @@ public class MainActivity extends AppCompatActivity {
         emailIntent.setType("message/rfc822");
         emailIntent.setType("application/image");
         String[] target = {"paper.analytical.devices@gmail.com"};
-        //String[] target = {"diyogon@gmail.com"};
         Uri attachment = buildJSON();
 
         Log.i("GB", attachment.toString());
         ArrayList<Uri> attachments = new ArrayList<Uri>();
         attachments.add(attachment);
-        attachments.add(this.raw);
-        attachments.add(this.rectified);
+        attachments.add(FileProvider.getUriForFile(this, this.getApplicationContext().getPackageName() + ".provider", new File(this.getCacheDir(), "original.png")));
+        attachments.add(FileProvider.getUriForFile(this, this.getApplicationContext().getPackageName() + ".provider", new File(this.getCacheDir(), "rectified.png")));
 
         emailIntent.putExtra(Intent.EXTRA_EMAIL, target);
         emailIntent.putExtra(Intent.EXTRA_SUBJECT, "PADs");
@@ -524,9 +523,8 @@ public class MainActivity extends AppCompatActivity {
         Uri ret = Uri.EMPTY;
         try {
             if(this.cDir == null){
-                this.cDir = this.getExternalCacheDir();
+                this.cDir = this.getCacheDir();
             }
-            //File outputFile = new File(this.cDir, "data.json");
             File outputFile = File.createTempFile("data", ".json", this.cDir);
             JSONObject jsonObject = new JSONObject();
             String compressedNotes = "Predicted drug =";
@@ -551,8 +549,7 @@ public class MainActivity extends AppCompatActivity {
             file.close();
             Log.i("GBR", outputFile.getPath());
             Log.i("GBR", getApplicationContext().getPackageName());
-            ret = FileProvider.getUriForFile(getApplicationContext(), getApplicationContext().getPackageName(), new File(outputFile.getPath()));
-            //getApplicationContext().grantUriPermission(getApplicationContext().getPackageName(), ret, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            ret = FileProvider.getUriForFile(this, this.getApplicationContext().getPackageName() + ".provider", outputFile);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -562,9 +559,6 @@ public class MainActivity extends AppCompatActivity {
     public void saveData(View view) {
         Log.i("GBR", "Pr-email");
         sendEmail(view);
-        //buildJSON();
-//        Log.i("GBR", "Calling image capture from save");
-//        startImageCapture();
     }
 
     public void discardData(View view) {
