@@ -131,6 +131,8 @@ public class ResultActivity extends AppCompatActivity {
 
         WorkManager.getInstance(this).enqueue(myUploadWork);
 
+        Toast.makeText(this, "Results added to upload queue", 2).show();
+
         finish();
         /*
         Intent emailIntent = new Intent(Intent.ACTION_SEND_MULTIPLE);
