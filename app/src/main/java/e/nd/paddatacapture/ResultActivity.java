@@ -33,6 +33,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class ResultActivity extends AppCompatActivity {
     SharedPreferences mPreferences = null;
@@ -58,8 +59,12 @@ public class ResultActivity extends AppCompatActivity {
         ImageView imageView = findViewById(R.id.imageView);
         imageView.setImageURI(intent.getData());
 
-        TextView vPredicted = findViewById(R.id.batchAuto);
-        vPredicted.setText(intent.getStringExtra(MainActivity.EXTRA_PREDICTED));
+        String sPredicted = intent.getStringExtra(MainActivity.EXTRA_PREDICTED);
+        Spinner sResult = findViewById(R.id.batchSpinner);
+        ArrayAdapter<String> aPredicted = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, Arrays.asList(sPredicted));
+        sResult.setEnabled(false);
+        sResult.setAdapter(aPredicted);
+        sResult.setSelection(aPredicted.getPosition(sPredicted));
 
         if( intent.hasExtra(MainActivity.EXTRA_SAMPLEID) ) {
             this.qr = intent.getStringExtra(MainActivity.EXTRA_SAMPLEID);
@@ -132,7 +137,7 @@ public class ResultActivity extends AppCompatActivity {
 
         WorkManager.getInstance(this).enqueue(myUploadWork);
 
-        Toast.makeText(this, "Results added to upload queue", 1).show();
+        Toast.makeText(this, "Results added to upload queue", Toast.LENGTH_SHORT).show();
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -226,8 +231,8 @@ public class ResultActivity extends AppCompatActivity {
     }
 
     private String getBatch() {
-        TextView textView1 = findViewById(R.id.batchAuto);
-        String ret = String.valueOf(textView1.getText());
+        Spinner spinner = findViewById(R.id.batchSpinner);
+        String ret = String.valueOf(spinner.getSelectedItem());
         if(ret.isEmpty()){
             ret = "n/a";
         }

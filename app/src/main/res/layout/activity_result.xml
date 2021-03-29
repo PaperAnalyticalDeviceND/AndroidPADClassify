@@ -148,15 +148,11 @@
             tools:layout_editor_absoluteX="136dp"
             tools:layout_editor_absoluteY="85dp" />
 
-        <TextView
-            android:id="@+id/batchAuto"
+        <Spinner
+            android:id="@+id/batchSpinner"
             android:layout_width="match_parent"
-            android:layout_height="39dp"
-            android:completionThreshold="0"
-            android:dropDownWidth="wrap_content"
+            android:layout_height="37dp"
             android:dropDownHeight="wrap_content"
-            android:selectAllOnFocus="true"
-            android:textStyle="bold"
             tools:layout_editor_absoluteX="132dp"
             tools:layout_editor_absoluteY="111dp" />
 
