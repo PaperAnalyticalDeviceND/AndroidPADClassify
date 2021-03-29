@@ -105,7 +105,7 @@ public class ResultActivity extends AppCompatActivity {
     public void saveData(View view) {
         Log.i("GB", "Button pushed");
 
-        String compressedNotes = "Predicted drug =";
+        String compressedNotes = "Predicted drug = ";
         compressedNotes += getBatch();
         compressedNotes += ", ";
         compressedNotes += getNotes();
