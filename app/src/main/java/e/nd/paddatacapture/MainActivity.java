@@ -20,6 +20,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import org.opencv.android.OpenCVLoader;
 import org.tensorflow.lite.support.image.ImageProcessor;
 import org.tensorflow.lite.support.image.TensorImage;
 import org.tensorflow.lite.support.image.ops.ResizeOp;
@@ -71,9 +72,18 @@ public class MainActivity extends AppCompatActivity {
     final String[] ASSOCIATED_AXIS_LABELS = {"labels.txt", "labels.txt"};
     List<String>[] associatedAxisLabels = (ArrayList<String>[])new ArrayList[2];
 
+    // pls class
+    Partial_least_squares pls = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        //initialize opencv
+        if (!OpenCVLoader.initDebug()) {
+            // Handle initialization error
+            Log.i("GBT", "Opencv not loaded");
+        }
 
         // Initialization code for TensorFlow Lite
         // Initialise the models
@@ -144,6 +154,9 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        // setup pls
+        pls = new Partial_least_squares(this);
+
         // setup remainder
         setContentView(R.layout.activity_main);
     }
@@ -205,8 +218,8 @@ public class MainActivity extends AppCompatActivity {
                     File rectifiedFile = new File(targetDir, "rectified.png");
 
                     // crop input image
-                    Bitmap bm = BitmapFactory.decodeFile(rectifiedFile.getPath());
-                    bm = Bitmap.createBitmap(bm, 71, 359, 636, 490);
+                    Bitmap bmRect = BitmapFactory.decodeFile(rectifiedFile.getPath());
+                    Bitmap bm = Bitmap.createBitmap(bmRect, 71, 359, 636, 490);
 
                     // create output string
                     String output_string = new String();
@@ -239,9 +252,14 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
 
+                    // calculate concentration from PLSR method
+                    double concentration = pls.do_pls(bmRect, "albendazole");
+
+                    output_string += "%, (PLS " + (int)concentration + "%)";
+
                     Intent intent = new Intent(this, ResultActivity.class);
                     intent.setData(Uri.fromFile(rectifiedFile));
-                    intent.putExtra(EXTRA_PREDICTED, output_string + "%");
+                    intent.putExtra(EXTRA_PREDICTED, output_string);
                     if (data.hasExtra("qr"))  intent.putExtra(EXTRA_SAMPLEID, data.getExtras().getString("qr"));
                     if (data.hasExtra("timestamp")) intent.putExtra(EXTRA_TIMESTAMP, timestamp);
                     if( associatedAxisLabels[0].size() > 0 ) intent.putExtra(EXTRA_LABEL_DRUGS, (String[]) associatedAxisLabels[0].toArray(new String[0]));

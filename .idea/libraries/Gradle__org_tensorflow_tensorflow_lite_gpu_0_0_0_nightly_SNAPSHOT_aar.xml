@@ -4,6 +4,9 @@
       <root url="jar://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/5689cbca68ad107635bf74acef57d8ef/tensorflow-lite-gpu-0.0.0-nightly-SNAPSHOT/jars/classes.jar!/" />
       <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/5689cbca68ad107635bf74acef57d8ef/tensorflow-lite-gpu-0.0.0-nightly-SNAPSHOT/res" />
       <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/5689cbca68ad107635bf74acef57d8ef/tensorflow-lite-gpu-0.0.0-nightly-SNAPSHOT/AndroidManifest.xml" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/ae952d4cda6bf8172d18e8ce2edfaff3/tensorflow-lite-gpu-0.0.0-nightly-SNAPSHOT/res" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/ae952d4cda6bf8172d18e8ce2edfaff3/tensorflow-lite-gpu-0.0.0-nightly-SNAPSHOT/AndroidManifest.xml" />
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/ae952d4cda6bf8172d18e8ce2edfaff3/tensorflow-lite-gpu-0.0.0-nightly-SNAPSHOT/jars/classes.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

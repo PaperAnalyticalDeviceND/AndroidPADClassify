@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/PAD_Classify.iml" filepath="$PROJECT_DIR$/.idea/modules/PAD_Classify.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/PAD_Classify.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/PAD_Classify.app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/opencv/PAD_Classify.opencv.iml" filepath="$PROJECT_DIR$/.idea/modules/opencv/PAD_Classify.opencv.iml" />
     </modules>
   </component>
 </project>

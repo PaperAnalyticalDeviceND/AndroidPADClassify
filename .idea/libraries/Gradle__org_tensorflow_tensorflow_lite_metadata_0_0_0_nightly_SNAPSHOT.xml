@@ -2,6 +2,7 @@
   <library name="Gradle: org.tensorflow:tensorflow-lite-metadata:0.0.0-nightly-SNAPSHOT">
     <CLASSES>
       <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.tensorflow/tensorflow-lite-metadata/0.0.0-nightly-SNAPSHOT/50e474dfc807951ebf2a009b257a8a1d31f462b9/tensorflow-lite-metadata-0.0.0-nightly-SNAPSHOT.jar!/" />
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.tensorflow/tensorflow-lite-metadata/0.0.0-nightly-SNAPSHOT/3d055d73fb515869a30aefd62cd0dd8528cf0a03/tensorflow-lite-metadata-0.0.0-nightly-SNAPSHOT.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
