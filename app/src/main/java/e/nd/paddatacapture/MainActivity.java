@@ -253,8 +253,17 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     // calculate concentration from PLSR method
-                    double concentration = pls.do_pls(bmRect, "albendazole");
+                    // get drug if available
+                    String[] drug = output_string.split(" ", 2);
+                    String drugStr = "albendazole";
+                    if(drug.length > 1){
+                        drugStr = drug[0].toLowerCase();
+                    }
 
+                    // call
+                    double concentration = pls.do_pls(bmRect, drugStr);
+
+                    // add conc. result to string
                     output_string += "%, (PLS " + (int)concentration + "%)";
 
                     Intent intent = new Intent(this, ResultActivity.class);

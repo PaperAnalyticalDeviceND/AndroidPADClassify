@@ -92,6 +92,15 @@ public class Partial_least_squares {
 
     // actually perform the pls
     public double do_pls(Bitmap bmp, String drug){
+
+        // find drug index
+        int drug_idnx = labels.indexOf(drug);
+        Log.i("GBT-PLS", "drug, "+drug+", index "+ drug_idnx);
+
+        if (drug_idnx < 0){
+            drug_idnx = 0;
+        }
+
         // save results
         double concentration = 0.0;
 
@@ -147,7 +156,7 @@ public class Partial_least_squares {
 
         // if we are here we should have results
         // get concentration
-        concentration = calc_concentration(results, drug);
+        concentration = calc_concentration(results, drug_idnx);
 
         // flag conc.
         Log.i("GBT-PLS", "PLS concentration, "+concentration);
@@ -239,13 +248,11 @@ public class Partial_least_squares {
     }
 
     // calculate concentration using PLSR
-    private double calc_concentration(List<double []> results, String drug){
+    private double calc_concentration(List<double []> results, int drug_idnx){
         double conc = 0.0;
 
-        int pls_index = 0;
-
         // get coefficients to use
-        List<Float> drug_coeffs = coeffs.get(pls_index);
+        List<Float> drug_coeffs = coeffs.get(drug_idnx);
 
         // first coeff is intercept
         conc = drug_coeffs.get(0);
