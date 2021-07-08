@@ -79,9 +79,9 @@ public class Partial_least_squares {
             // run test at initialize
             // calculate the concentration
             // for regression should be 28.22623085
-            Bitmap bmp = BitmapFactory.decodeStream(context.getAssets().open("pls_test_16895.png"));
-
-            double concentration = do_pls(bmp, "albendazole");
+//            Bitmap bmp = BitmapFactory.decodeStream(context.getAssets().open("pls_test_16895.png"));
+//
+//            double concentration = do_pls(bmp, "albendazole");
 
         } catch (IOException e) {
             Log.i("GBT-PLS", "PLS error");
